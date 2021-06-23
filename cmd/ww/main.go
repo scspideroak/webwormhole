@@ -13,6 +13,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/scspideroak/webwormhole/server"
 	"github.com/scspideroak/webwormhole/wordlist"
 	"github.com/scspideroak/webwormhole/wormhole"
 	"rsc.io/qr"
@@ -22,7 +23,7 @@ var subcmds = map[string]func(args ...string){
 	"send":    send,
 	"receive": receive,
 	"pipe":    pipe,
-	"server":  Server,
+	"server":  server.Server,
 }
 
 var (

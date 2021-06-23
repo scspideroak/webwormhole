@@ -1,4 +1,4 @@
-package main
+package server
 
 // This is the signalling server. It relays messages between peers wishing to connect.
 
