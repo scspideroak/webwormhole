@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	crand "crypto/rand"
 	"flag"
 	"fmt"
@@ -77,7 +78,7 @@ func newConn(code string, length int) *wormhole.Wormhole {
 		if pass == nil {
 			fatalf("could not decode password")
 		}
-		c, err := wormhole.Join(strconv.Itoa(slot), string(pass), sigserv)
+		c, err := wormhole.Join(context.TODO(), strconv.Itoa(slot), string(pass), sigserv)
 		if err == wormhole.ErrBadVersion {
 			fatalf(
 				"%s%s%s",
@@ -110,7 +111,7 @@ func newConn(code string, length int) *wormhole.Wormhole {
 		}
 		printcode(wordlist.Encode(slot, pass))
 	}()
-	c, err := wormhole.New(string(pass), sigserv, slotc)
+	c, err := wormhole.New(context.TODO(), string(pass), sigserv, slotc)
 	if err == wormhole.ErrBadVersion {
 		fatalf(
 			"%s%s%s",
