@@ -45,6 +45,7 @@ import (
 
 	"filippo.io/cpace"
 	webrtc "github.com/pion/webrtc/v3"
+	"gitlab.com/jonas.jasas/condchan"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/net/proxy"
@@ -136,7 +137,9 @@ type Wormhole struct {
 	err chan error
 	// flushc is a condition variable to coordinate flushed state of the
 	// underlying channel.
-	flushc *sync.Cond
+	flushc   *condchan.CondChan
+	ctx      context.Context
+	canceled bool
 }
 
 // Read writes a message to the default DataChannel.
@@ -146,8 +149,22 @@ func (c *Wormhole) Write(p []byte) (n int, err error) {
 	// Work around this by blocking here and waiting for flushes.
 	// https://github.com/pion/sctp/issues/77
 	c.flushc.L.Lock()
+
+	// Passing func that gets channel ch that signals when
+	// Signal or Broadcast is called on CondChan
 	for c.d.BufferedAmount() > c.d.BufferedAmountLowThreshold() {
-		c.flushc.Wait()
+		c.flushc.Select(func(ch <-chan struct{}) { // Waiting with select
+			select {
+			case <-ch: // Never ending wait
+			case <-c.ctx.Done():
+				c.canceled = true
+			}
+		})
+		if c.canceled {
+			logf("canceled")
+			c.flushc.L.Unlock()
+			return 0, io.EOF
+		}
 	}
 	c.flushc.L.Unlock()
 	return c.rwc.Write(p)
@@ -169,10 +186,12 @@ func (c *Wormhole) flushed() {
 // and its PeerConnection.
 func (c *Wormhole) Close() (err error) {
 	logf("closing")
-	for c.d.BufferedAmount() != 0 {
-		// SetBufferedAmountLowThreshold does not seem to take effect
-		// when after the last Write().
-		time.Sleep(time.Second) // eww.
+	if !c.canceled {
+		for c.d.BufferedAmount() != 0 {
+			// SetBufferedAmountLowThreshold does not seem to take effect
+			// when after the last Write().
+			time.Sleep(time.Second) // eww.
+		}
 	}
 	tryclose := func(c io.Closer) {
 		e := c.Close()
@@ -259,8 +278,8 @@ func writeBase64(ctx context.Context, ws *websocket.Conn, p []byte) error {
 // and ICE servers to use.
 func readInitMsg(ctx context.Context, ws *websocket.Conn) (slot string, iceServers []webrtc.ICEServer, err error) {
 	msg := struct {
-		Slot       string             `json:"slot",omitempty`
-		ICEServers []webrtc.ICEServer `json:"iceServers",omitempty`
+		Slot       string             `json:"slot,omitempty"`
+		ICEServers []webrtc.ICEServer `json:"iceServers,omitempty"`
 	}{}
 
 	_, buf, err := ws.Read(ctx)
@@ -366,9 +385,11 @@ func (c *Wormhole) IsRelay() bool {
 // If pc is nil it initialises ones using the default STUN server.
 func New(ctx context.Context, pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	c := &Wormhole{
-		opened: make(chan struct{}),
-		err:    make(chan error),
-		flushc: sync.NewCond(&sync.Mutex{}),
+		opened:   make(chan struct{}),
+		err:      make(chan error),
+		flushc:   condchan.New(&sync.Mutex{}),
+		ctx:      ctx,
+		canceled: false,
 	}
 
 	u, err := url.Parse(sigserv)
@@ -496,9 +517,11 @@ func New(ctx context.Context, pass string, sigserv string, slotc chan string) (*
 // If pc is nil it initialises ones using the default STUN server.
 func Join(ctx context.Context, slot, pass string, sigserv string) (*Wormhole, error) {
 	c := &Wormhole{
-		opened: make(chan struct{}),
-		err:    make(chan error),
-		flushc: sync.NewCond(&sync.Mutex{}),
+		opened:   make(chan struct{}),
+		err:      make(chan error),
+		flushc:   condchan.New(&sync.Mutex{}),
+		ctx:      ctx,
+		canceled: false,
 	}
 
 	u, err := url.Parse(sigserv)
