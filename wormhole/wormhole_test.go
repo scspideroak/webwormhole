@@ -390,6 +390,7 @@ func TestCancelTransfer(t *testing.T) {
 			if err != nil {
 				return err
 			}
+			defer c.Close()
 
 			dec := json.NewDecoder(c)
 			var hdr header
