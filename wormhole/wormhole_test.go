@@ -22,9 +22,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SpiderOak/webwormhole/wordlist"
+	"github.com/SpiderOak/webwormhole/wormhole"
 	"github.com/alecthomas/units"
-	"github.com/scspideroak/webwormhole/wordlist"
-	"github.com/scspideroak/webwormhole/wormhole"
 	"golang.org/x/sync/errgroup"
 	"nhooyr.io/websocket"
 )

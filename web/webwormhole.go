@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 // WebAssembly program webwormhole is a set of wrappers for webwormhole and
@@ -15,7 +16,7 @@ import (
 	"syscall/js"
 
 	"filippo.io/cpace"
-	"github.com/scspideroak/webwormhole/wordlist"
+	"github.com/SpiderOak/webwormhole/wordlist"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/nacl/secretbox"
 	"rsc.io/qr"
