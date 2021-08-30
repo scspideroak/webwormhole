@@ -386,7 +386,7 @@ func Server(args ...string) {
 			w.Header().Set("Strict-Transport-Security", "max-age=63072000")
 		}
 
-		// Return a redirect to source code repo for the go get URL.
+		// Return a redirect to source code repo for the go install URL.
 		if r.URL.Query().Get("go-get") == "1" || r.URL.Path == "/cmd/ww" {
 			w.Write([]byte(importMeta))
 			return

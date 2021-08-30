@@ -10,7 +10,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"hash"
 	"io"
 	mathrand "math/rand"
 	"net"
@@ -186,15 +185,6 @@ func (c *catReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// closeHash frees any of the Hash's associated resources, like allocated memory, if
-// any.
-func closeHash(h hash.Hash) error {
-	if c, ok := h.(io.Closer); ok {
-		return c.Close()
-	}
-	return nil
-}
-
 type header struct {
 	Name string `json:"name,omitempty"`
 	Size int    `json:"size,omitempty"`
@@ -235,8 +225,7 @@ func TestTransfer(t *testing.T) {
 	}
 
 	slotc := make(chan string)
-	ctxReceiver := context.Background()
-	var grpReceive errgroup.Group
+	var group errgroup.Group
 	go func() {
 		s := <-slotc
 		slot, err := strconv.Atoi(s)
@@ -247,7 +236,7 @@ func TestTransfer(t *testing.T) {
 		passphrase := wordlist.Encode(slot, password)
 
 		// Receiver
-		grpReceive.Go(func() error {
+		group.Go(func() error {
 			if testing.Verbose() {
 				t.Logf("passphrase: %q", passphrase)
 			}
@@ -256,7 +245,7 @@ func TestTransfer(t *testing.T) {
 				return errors.New("nil password")
 			}
 
-			c, err := wormhole.Join(ctxReceiver, strconv.Itoa(slot), string(pass), "http://"+sync.Host)
+			c, err := wormhole.Join(context.Background(), strconv.Itoa(slot), string(pass), "http://"+sync.Host)
 			if err != nil {
 				return err
 			}
@@ -275,7 +264,6 @@ func TestTransfer(t *testing.T) {
 			}
 
 			h := sha256.New()
-			defer closeHash(h)
 
 			n, err := io.CopyN(h, cat(dec.Buffered(), c), int64(len(data)))
 			if err != nil {
@@ -314,9 +302,7 @@ func TestTransfer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//Note that bytes.NewReader directly satisfies the io.ReaderFrom interface, but its implementation is no better
-	// than io.Copy (always incurring an allocation) in this circumstance. The alternative is to do anonymous struct
-	// value hack, but this hack is not intuitive to most people.
+	// Mask off the ReadFrom/WriteTo functions using anonymous struct value.
 	written, err := io.CopyBuffer(c, struct{ io.Reader }{dataReader}, make([]byte, msgChunkSize))
 	if err != nil {
 		t.Fatal(err)
@@ -329,7 +315,7 @@ func TestTransfer(t *testing.T) {
 		t.Logf("waiting for receive")
 	}
 
-	if err := grpReceive.Wait(); err != nil {
+	if err := group.Wait(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -365,7 +351,6 @@ func TestCancelTransfer(t *testing.T) {
 	}
 
 	slotc := make(chan string)
-	ctxReceiver := context.Background()
 	var grpReceive errgroup.Group
 	go func() {
 		s := <-slotc
@@ -386,7 +371,7 @@ func TestCancelTransfer(t *testing.T) {
 				return errors.New("nil password")
 			}
 
-			c, err := wormhole.Join(ctxReceiver, strconv.Itoa(slot), string(pass), "http://"+sync.Host)
+			c, err := wormhole.Join(context.Background(), strconv.Itoa(slot), string(pass), "http://"+sync.Host)
 			if err != nil {
 				return err
 			}

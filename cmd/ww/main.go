@@ -1,7 +1,7 @@
 // Command ww moves files and other data over WebRTC.
 //
 // Install using:
-//	go get -u github.com/SpiderOak/webwormhole/cmd/ww
+//	go install github.com/SpiderOak/webwormhole/cmd/ww
 package main
 
 import (
@@ -84,7 +84,7 @@ func newConn(code string, length int) *wormhole.Wormhole {
 				"%s%s%s",
 				"the signalling server is running an incompatable version.\n",
 				"try upgrading the client:\n\n",
-				"    go get github.com/SpiderOak/webwormhole/cmd/ww\n",
+				"    go install github.com/SpiderOak/webwormhole/cmd/ww\n",
 			)
 		}
 		if err != nil {
@@ -117,7 +117,7 @@ func newConn(code string, length int) *wormhole.Wormhole {
 			"%s%s%s",
 			"the signalling server is running an incompatable version.\n",
 			"try upgrading the client:\n\n",
-			"    go get github.com/SpiderOak/webwormhole/cmd/ww\n",
+			"    go install github.com/SpiderOak/webwormhole/cmd/ww\n",
 		)
 	}
 	if err != nil {
