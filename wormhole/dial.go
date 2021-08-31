@@ -149,6 +149,7 @@ func (c *Wormhole) Write(p []byte) (n int, err error) {
 	// Work around this by blocking here and waiting for flushes.
 	// https://github.com/pion/sctp/issues/77
 	c.flushc.L.Lock()
+	defer c.flushc.L.Unlock()
 
 	// Passing func that gets channel ch that signals when
 	// Signal or Broadcast is called on CondChan
@@ -162,11 +163,9 @@ func (c *Wormhole) Write(p []byte) (n int, err error) {
 		})
 		if c.canceled {
 			logf("canceled")
-			c.flushc.L.Unlock()
 			return 0, io.EOF
 		}
 	}
-	c.flushc.L.Unlock()
 	return c.rwc.Write(p)
 }
 
