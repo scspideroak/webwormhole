@@ -1,4 +1,4 @@
-package main
+package server
 
 // This is the signalling server. It relays messages between peers wishing to connect.
 
@@ -21,12 +21,12 @@ import (
 	"time"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/SpiderOak/webwormhole/wormhole"
 	webrtc "github.com/pion/webrtc/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/crypto/acme/autocert"
 	"nhooyr.io/websocket"
-	"webwormhole.io/wormhole"
 )
 
 // slotTimeout is the the maximum amount of time a client is allowed to
@@ -386,7 +386,7 @@ func Server(args ...string) {
 			w.Header().Set("Strict-Transport-Security", "max-age=63072000")
 		}
 
-		// Return a redirect to source code repo for the go get URL.
+		// Return a redirect to source code repo for the go install URL.
 		if r.URL.Query().Get("go-get") == "1" || r.URL.Path == "/cmd/ww" {
 			w.Write([]byte(importMeta))
 			return

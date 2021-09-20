@@ -45,6 +45,7 @@ import (
 
 	"filippo.io/cpace"
 	webrtc "github.com/pion/webrtc/v3"
+	"gitlab.com/jonas.jasas/condchan"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/nacl/secretbox"
 	"golang.org/x/net/proxy"
@@ -136,7 +137,9 @@ type Wormhole struct {
 	err chan error
 	// flushc is a condition variable to coordinate flushed state of the
 	// underlying channel.
-	flushc *sync.Cond
+	flushc   *condchan.CondChan
+	ctx      context.Context
+	canceled bool
 }
 
 // Read writes a message to the default DataChannel.
@@ -146,10 +149,23 @@ func (c *Wormhole) Write(p []byte) (n int, err error) {
 	// Work around this by blocking here and waiting for flushes.
 	// https://github.com/pion/sctp/issues/77
 	c.flushc.L.Lock()
+	defer c.flushc.L.Unlock()
+
+	// Passing func that gets channel ch that signals when
+	// Signal or Broadcast is called on CondChan
 	for c.d.BufferedAmount() > c.d.BufferedAmountLowThreshold() {
-		c.flushc.Wait()
+		c.flushc.Select(func(ch <-chan struct{}) { // Waiting with select
+			select {
+			case <-ch: // Never ending wait
+			case <-c.ctx.Done():
+				c.canceled = true
+			}
+		})
+		if c.canceled {
+			logf("canceled")
+			return 0, io.EOF
+		}
 	}
-	c.flushc.L.Unlock()
 	return c.rwc.Write(p)
 }
 
@@ -169,10 +185,12 @@ func (c *Wormhole) flushed() {
 // and its PeerConnection.
 func (c *Wormhole) Close() (err error) {
 	logf("closing")
-	for c.d.BufferedAmount() != 0 {
-		// SetBufferedAmountLowThreshold does not seem to take effect
-		// when after the last Write().
-		time.Sleep(time.Second) // eww.
+	if !c.canceled {
+		for c.d.BufferedAmount() != 0 {
+			// SetBufferedAmountLowThreshold does not seem to take effect
+			// when after the last Write().
+			time.Sleep(time.Second) // eww.
+		}
 	}
 	tryclose := func(c io.Closer) {
 		e := c.Close()
@@ -202,8 +220,8 @@ func (c *Wormhole) error(err error) {
 	c.err <- err
 }
 
-func readEncJSON(ws *websocket.Conn, key *[32]byte, v interface{}) error {
-	_, buf, err := ws.Read(context.TODO())
+func readEncJSON(ctx context.Context, ws *websocket.Conn, key *[32]byte, v interface{}) error {
+	_, buf, err := ws.Read(ctx)
 	if err != nil {
 		return err
 	}
@@ -220,7 +238,7 @@ func readEncJSON(ws *websocket.Conn, key *[32]byte, v interface{}) error {
 	return json.Unmarshal(jsonmsg, v)
 }
 
-func writeEncJSON(ws *websocket.Conn, key *[32]byte, v interface{}) error {
+func writeEncJSON(ctx context.Context, ws *websocket.Conn, key *[32]byte, v interface{}) error {
 	jsonmsg, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -230,7 +248,7 @@ func writeEncJSON(ws *websocket.Conn, key *[32]byte, v interface{}) error {
 		return err
 	}
 	return ws.Write(
-		context.TODO(),
+		ctx,
 		websocket.MessageText,
 		[]byte(base64.URLEncoding.EncodeToString(
 			secretbox.Seal(nonce[:], jsonmsg, &nonce, key),
@@ -238,17 +256,17 @@ func writeEncJSON(ws *websocket.Conn, key *[32]byte, v interface{}) error {
 	)
 }
 
-func readBase64(ws *websocket.Conn) ([]byte, error) {
-	_, buf, err := ws.Read(context.TODO())
+func readBase64(ctx context.Context, ws *websocket.Conn) ([]byte, error) {
+	_, buf, err := ws.Read(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return base64.URLEncoding.DecodeString(string(buf))
 }
 
-func writeBase64(ws *websocket.Conn, p []byte) error {
+func writeBase64(ctx context.Context, ws *websocket.Conn, p []byte) error {
 	return ws.Write(
-		context.TODO(),
+		ctx,
 		websocket.MessageText,
 		[]byte(base64.URLEncoding.EncodeToString(p)),
 	)
@@ -257,13 +275,13 @@ func writeBase64(ws *websocket.Conn, p []byte) error {
 // readInitMsg reads the first message the signalling server sends over
 // the WebSocket connection, which has metadata includign assigned slot
 // and ICE servers to use.
-func readInitMsg(ws *websocket.Conn) (slot string, iceServers []webrtc.ICEServer, err error) {
+func readInitMsg(ctx context.Context, ws *websocket.Conn) (slot string, iceServers []webrtc.ICEServer, err error) {
 	msg := struct {
-		Slot       string             `json:"slot",omitempty`
-		ICEServers []webrtc.ICEServer `json:"iceServers",omitempty`
+		Slot       string             `json:"slot,omitempty"`
+		ICEServers []webrtc.ICEServer `json:"iceServers,omitempty"`
 	}{}
 
-	_, buf, err := ws.Read(context.TODO())
+	_, buf, err := ws.Read(ctx)
 	if err != nil {
 		return "", nil, err
 	}
@@ -274,10 +292,10 @@ func readInitMsg(ws *websocket.Conn) (slot string, iceServers []webrtc.ICEServer
 // handleRemoteCandidates waits for remote candidate to trickle in. We close
 // the websocket when we get a successful connection so this should fail and
 // exit at some point.
-func (c *Wormhole) handleRemoteCandidates(ws *websocket.Conn, key *[32]byte) {
+func (c *Wormhole) handleRemoteCandidates(ctx context.Context, ws *websocket.Conn, key *[32]byte) {
 	for {
 		var candidate webrtc.ICECandidateInit
-		err := readEncJSON(ws, key, &candidate)
+		err := readEncJSON(ctx, ws, key, &candidate)
 		if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 			return
 		}
@@ -364,11 +382,13 @@ func (c *Wormhole) IsRelay() bool {
 // The server generated slot identifier is written on slotc.
 //
 // If pc is nil it initialises ones using the default STUN server.
-func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
+func New(ctx context.Context, pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	c := &Wormhole{
-		opened: make(chan struct{}),
-		err:    make(chan error),
-		flushc: sync.NewCond(&sync.Mutex{}),
+		opened:   make(chan struct{}),
+		err:      make(chan error),
+		flushc:   condchan.New(&sync.Mutex{}),
+		ctx:      ctx,
+		canceled: false,
 	}
 
 	u, err := url.Parse(sigserv)
@@ -382,14 +402,14 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	}
 	wsaddr := u.String()
 
-	ws, _, err := websocket.Dial(context.TODO(), wsaddr, &websocket.DialOptions{
+	ws, _, err := websocket.Dial(ctx, wsaddr, &websocket.DialOptions{
 		Subprotocols: []string{Protocol},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	assignedSlot, iceServers, err := readInitMsg(ws)
+	assignedSlot, iceServers, err := readInitMsg(ctx, ws)
 	if websocket.CloseStatus(err) == CloseWrongProto {
 		return nil, ErrBadVersion
 	}
@@ -403,7 +423,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 		return nil, err
 	}
 
-	msgA, err := readBase64(ws)
+	msgA, err := readBase64(ctx, ws)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +438,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = writeBase64(ws, msgB)
+	err = writeBase64(ctx, ws, msgB)
 	if err != nil {
 		return nil, err
 	}
@@ -428,7 +448,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 		if candidate == nil {
 			return
 		}
-		err := writeEncJSON(ws, &key, candidate.ToJSON())
+		err := writeEncJSON(ctx, ws, &key, candidate.ToJSON())
 		if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 			return
 		}
@@ -443,7 +463,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = writeEncJSON(ws, &key, offer)
+	err = writeEncJSON(ctx, ws, &key, offer)
 	if err != nil {
 		return nil, err
 	}
@@ -454,7 +474,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	logf("sent offer")
 
 	var answer webrtc.SessionDescription
-	err = readEncJSON(ws, &key, &answer)
+	err = readEncJSON(ctx, ws, &key, &answer)
 	if websocket.CloseStatus(err) == CloseBadKey {
 		return nil, ErrBadKey
 	}
@@ -467,7 +487,7 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 	}
 	logf("got answer")
 
-	go c.handleRemoteCandidates(ws, &key)
+	go c.handleRemoteCandidates(ctx, ws, &key)
 
 	select {
 	case <-c.opened:
@@ -494,11 +514,13 @@ func New(pass string, sigserv string, slotc chan string) (*Wormhole, error) {
 // offer and answer.
 //
 // If pc is nil it initialises ones using the default STUN server.
-func Join(slot, pass string, sigserv string) (*Wormhole, error) {
+func Join(ctx context.Context, slot, pass string, sigserv string) (*Wormhole, error) {
 	c := &Wormhole{
-		opened: make(chan struct{}),
-		err:    make(chan error),
-		flushc: sync.NewCond(&sync.Mutex{}),
+		opened:   make(chan struct{}),
+		err:      make(chan error),
+		flushc:   condchan.New(&sync.Mutex{}),
+		ctx:      ctx,
+		canceled: false,
 	}
 
 	u, err := url.Parse(sigserv)
@@ -514,14 +536,14 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 	wsaddr := u.String()
 
 	// Start the handshake.
-	ws, _, err := websocket.Dial(context.TODO(), wsaddr, &websocket.DialOptions{
+	ws, _, err := websocket.Dial(ctx, wsaddr, &websocket.DialOptions{
 		Subprotocols: []string{Protocol},
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	_, iceServers, err := readInitMsg(ws)
+	_, iceServers, err := readInitMsg(ctx, ws)
 	if websocket.CloseStatus(err) == CloseWrongProto {
 		return nil, ErrBadVersion
 	}
@@ -548,13 +570,13 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = writeBase64(ws, msgA)
+	err = writeBase64(ctx, ws, msgA)
 	if err != nil {
 		return nil, err
 	}
 	logf("sent A pake msg (%v bytes)", len(msgA))
 
-	msgB, err := readBase64(ws)
+	msgB, err := readBase64(ctx, ws)
 	if websocket.CloseStatus(err) == CloseWrongProto {
 		return nil, ErrBadVersion
 	}
@@ -573,7 +595,7 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 	logf("have key, got B msg (%v bytes)", len(msgB))
 
 	var offer webrtc.SessionDescription
-	err = readEncJSON(ws, &key, &offer)
+	err = readEncJSON(ctx, ws, &key, &offer)
 	if err == ErrBadKey {
 		// Close with the right status so the other side knows to quit immediately.
 		ws.Close(CloseBadKey, "bad key")
@@ -587,7 +609,7 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 		if candidate == nil {
 			return
 		}
-		err := writeEncJSON(ws, &key, candidate.ToJSON())
+		err := writeEncJSON(ctx, ws, &key, candidate.ToJSON())
 		if websocket.CloseStatus(err) == websocket.StatusNormalClosure {
 			return
 		}
@@ -607,7 +629,7 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = writeEncJSON(ws, &key, answer)
+	err = writeEncJSON(ctx, ws, &key, answer)
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +639,7 @@ func Join(slot, pass string, sigserv string) (*Wormhole, error) {
 	}
 	logf("sent answer")
 
-	go c.handleRemoteCandidates(ws, &key)
+	go c.handleRemoteCandidates(ctx, ws, &key)
 
 	select {
 	case <-c.opened:

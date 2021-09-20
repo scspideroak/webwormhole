@@ -1,10 +1,11 @@
 // Command ww moves files and other data over WebRTC.
 //
 // Install using:
-//	go get -u webwormhole.io/cmd/ww
+//	go install github.com/SpiderOak/webwormhole/cmd/ww
 package main
 
 import (
+	"context"
 	crand "crypto/rand"
 	"flag"
 	"fmt"
@@ -13,16 +14,17 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/SpiderOak/webwormhole/server"
+	"github.com/SpiderOak/webwormhole/wordlist"
+	"github.com/SpiderOak/webwormhole/wormhole"
 	"rsc.io/qr"
-	"webwormhole.io/wordlist"
-	"webwormhole.io/wormhole"
 )
 
 var subcmds = map[string]func(args ...string){
 	"send":    send,
 	"receive": receive,
 	"pipe":    pipe,
-	"server":  Server,
+	"server":  server.Server,
 }
 
 var (
@@ -76,13 +78,13 @@ func newConn(code string, length int) *wormhole.Wormhole {
 		if pass == nil {
 			fatalf("could not decode password")
 		}
-		c, err := wormhole.Join(strconv.Itoa(slot), string(pass), sigserv)
+		c, err := wormhole.Join(context.TODO(), strconv.Itoa(slot), string(pass), sigserv)
 		if err == wormhole.ErrBadVersion {
 			fatalf(
 				"%s%s%s",
 				"the signalling server is running an incompatable version.\n",
 				"try upgrading the client:\n\n",
-				"    go get webwormhole.io/cmd/ww\n",
+				"    go install github.com/SpiderOak/webwormhole/cmd/ww\n",
 			)
 		}
 		if err != nil {
@@ -109,13 +111,13 @@ func newConn(code string, length int) *wormhole.Wormhole {
 		}
 		printcode(wordlist.Encode(slot, pass))
 	}()
-	c, err := wormhole.New(string(pass), sigserv, slotc)
+	c, err := wormhole.New(context.TODO(), string(pass), sigserv, slotc)
 	if err == wormhole.ErrBadVersion {
 		fatalf(
 			"%s%s%s",
 			"the signalling server is running an incompatable version.\n",
 			"try upgrading the client:\n\n",
-			"    go get webwormhole.io/cmd/ww\n",
+			"    go install github.com/SpiderOak/webwormhole/cmd/ww\n",
 		)
 	}
 	if err != nil {
