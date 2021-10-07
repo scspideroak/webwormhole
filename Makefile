@@ -16,6 +16,10 @@ all: webwormhole-ext.zip
 
 .PHONY: fmt
 fmt:
-	# build rome conainer with docker build -t rome ./web
-	docker run --rm -it -w /src -v $(PWD)/web:/src rome check --apply
+	prettier -w --use-tabs web/*.ts
 	go fmt ./...
+
+.PHONY: js
+js:
+	tsc -T ES2018 --strict web/ww.ts
+	tsc -T ES2018 --strict web/sw.ts
