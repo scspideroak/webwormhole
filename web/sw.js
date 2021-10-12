@@ -1,140 +1,156 @@
 "use strict";
-const PREFIX = "/_";
-
+/// <reference no-default-lib="true"/>
+/// <reference lib="es2018" />
+/// <reference lib="webworker" />
+// Workaround to tell TypeScript about the correct type of a ServiceWorker.
+const sw = self;
 // There can be multiple clients (pages) receiving files, so they generate an id
 // and here we store info assosiated with each transfer.
 const streams = new Map();
-
-// Repurposing the map...
+class Stream {
+    constructor(name, size, filetype) {
+        this.offset = 0;
+        this.name = name;
+        this.size = size;
+        this.filetype = filetype;
+        this.stream = new ReadableStream(this);
+    }
+    start(controller) {
+        this.controller = controller;
+    }
+    cancel(reason) {
+        console.warn("stream cancelled", reason);
+    }
+}
 function waitForMetadata(id) {
-	return new Promise((resolve, reject) => {
-		streams.set(id, {resolve, reject});
-	});
+    return new Promise((resolve, reject) => {
+        streams.set(id, { resolve, reject });
+    });
 }
-function signalMetadataReady(id, streamInfo) {
-	if (streams.has(id)) {
-		streams.get(id).resolve(streamInfo);
-	}
+function signalMetadataReady(id, s) {
+    if (streams.has(id)) {
+        streams.get(id).resolve(s);
+    }
 }
-
-function createStream(onCancel) {
-	const streamInfo = {};
-
-	streamInfo.stream = new ReadableStream({
-		start(controller) {
-			streamInfo.controller = controller;
-		},
-		cancel(reason) {
-			onCancel(reason);
-		},
-	});
-
-	return streamInfo;
-}
-
-self.addEventListener(
-	"message",
-	(event) => {
-		const message = event.data;
-		const id = message.id;
-
-		if (message.type === "metadata") {
-			const {name, size, filetype} = message;
-
-			// TODO propagate cancellation back to main window and sender.
-			function onCancel(cancelReason) {
-				return console.warn("stream cancelled", cancelReason);
-			}
-			const streamInfo = {
-				name,
-				size,
-				filetype,
-				offset: 0,
-				...createStream(onCancel),
-			};
-
-			// Resolve promise if GET request arrived first.
-			signalMetadataReady(id, streamInfo);
-
-			streams.set(id, streamInfo);
-		} else {
-			const streamInfo = streams.get(id);
-
-			if (message.type === "data") {
-				if (message.offset !== streamInfo.offset) {
-					console.warn(`aborting ${id}: got data out of order`);
-					// TODO abort fetch response
-					streams.delete(id);
-					return;
-				}
-				streamInfo.controller.enqueue(new Uint8Array(message.data));
-				streamInfo.offset += message.data.byteLength;
-			} else if (message.type === "end") {
-				streamInfo.controller.close();
-
-				// Synchronize with fetch handler to clean up properly.
-				if (streamInfo.requestHandled) {
-					streams.delete(id);
-				} else {
-					streamInfo.streamHandled = true;
-				}
-			} else if (message.type === "error") {
-				streamInfo.controller.error(message.error);
-			}
-		}
-	},
-);
-
+sw.addEventListener("message", (e) => {
+    const msg = e.data;
+    const id = msg.id;
+    switch (msg.type) {
+        case "metadata": {
+            const s = new Stream(msg.name, msg.size, msg.filetype);
+            // Resolve promise if GET request arrived first.
+            signalMetadataReady(id, s);
+            streams.set(id, s);
+            return;
+        }
+        case "data": {
+            const s = streams.get(id);
+            if (msg.offset !== s.offset) {
+                console.warn(`aborting ${id}: got data out of order`);
+                // TODO abort fetch response
+                streams.delete(id);
+                return;
+            }
+            s.controller.enqueue(new Uint8Array(msg.data));
+            s.offset += msg.data.byteLength;
+            return;
+        }
+        case "end": {
+            const s = streams.get(id);
+            s.controller.close();
+            // Synchronize with fetch handler to clean up properly.
+            if (s.requestHandled) {
+                streams.delete(id);
+            }
+            else {
+                s.streamHandled = true;
+            }
+            return;
+        }
+        case "error": {
+            streams.get(id).controller.error(msg.error);
+            return;
+        }
+    }
+});
 function encodeFilename(filename) {
-	return encodeURIComponent(filename).replace(/'/g, "%27").replace(/\(/g, "%28").replace(
-		/\(/g,
-		"%29",
-	).replace(/\*/g, "%2A");
+    return encodeURIComponent(filename)
+        .replace(/'/g, "%27")
+        .replace(/\(/g, "%28")
+        .replace(/\(/g, "%29")
+        .replace(/\*/g, "%2A");
 }
-
-self.addEventListener(
-	"fetch",
-	(event) => {
-		const url = new URL(event.request.url);
-
-		// Sanity test.
-		if (event.request.method !== "GET" || !url.pathname.startsWith(`${PREFIX}/`)) {
-			event.respondWith(fetch(event.request));
-			return;
-		}
-
-		event.respondWith(
-			(async () => {
-				const id = url.pathname.substring(`${PREFIX}/`.length);
-
-				// Request may arrive before metadata.
-				const streamInfo = streams.get(id) || (await waitForMetadata(id));
-
-				// Synchronize with message handler end to clean up properly.
-				if (streamInfo.streamHandled) {
-					streams.delete(id);
-				} else {
-					streamInfo.requestHandled = true;
-				}
-
-				const {size, name, filetype, stream} = streamInfo;
-
-				console.log(`serving ${name} (${id})`);
-
-				// Thanks to https://github.com/jimmywarting/StreamSaver.js for proper headers.
-				return new Response(
-					stream,
-					{
-						headers: {
-							"Content-Type": filetype,
-							"Content-Length": size,
-							"Content-Disposition": `attachment; filename*=UTF-8''${encodeFilename(
-								name,
-							)}`,
-						},
-					},
-				);
-			})(),
-		);
-	},
-);
+async function streamDownload(id) {
+    // Request may arrive before metadata.
+    const s = streams.get(id) || (await waitForMetadata(id));
+    // Synchronize with message handler end to clean up properly.
+    if (s.streamHandled) {
+        streams.delete(id);
+    }
+    else {
+        s.requestHandled = true;
+    }
+    const { size, name, filetype, stream } = s;
+    console.log(`downloading ${name} (${id})`);
+    return new Response(stream, {
+        headers: {
+            "Content-Type": filetype,
+            "Content-Length": size,
+            "Content-Disposition": `attachment; filename*=UTF-8''${encodeFilename(name)}`,
+        },
+    });
+}
+async function streamUpload(e) {
+    const contentLength = e.request.headers.get("content-length");
+    const contentType = e.request.headers.get("content-type");
+    const form = await e.request.formData();
+    const title = form.get("title");
+    if (!title) {
+        e.respondWith(new Response("no title", { status: 500 }));
+        return;
+    }
+    let body;
+    if (e.request.body) {
+        body = e.request.body;
+    }
+    else {
+        e.respondWith(new Response("no body", { status: 500 }));
+        return;
+    }
+    console.log(`uploading ${title}`);
+    e.respondWith(Response.redirect("/", 303)); // get index.html?
+    const client = await sw.clients.get(e.clientId || e.resultingClientId);
+    if (!client) {
+        e.respondWith(new Response("no client", { status: 500 }));
+        return;
+    }
+    // ReadableStream is transferable on Chrome at the time of writing. Since Share
+    // Target also only works on Chome, we can use this and avoid the complexity of
+    // chunking over postMessage (like we do with downloads) or having to read the
+    // whole file into memory.
+    // TypeScript doesn't know that ReadableStream is transferable, hence body as
+    // any.
+    client.postMessage({
+        name: title,
+        size: contentLength,
+        type: contentType,
+        stream: body,
+    }, [body]);
+}
+sw.addEventListener("fetch", (e) => {
+    const PREFIX = "/_";
+    const url = new URL(e.request.url);
+    // Stream download from WebRTC DataChannel.
+    if (url.pathname.startsWith(`${PREFIX}/`) && e.request.method === "GET") {
+        const id = url.pathname.substring(`${PREFIX}/`.length);
+        e.respondWith(streamDownload(id));
+        return;
+    }
+    // Stream upload to WebRTC DataChannel, triggered by Share Target API.
+    if (url.pathname.startsWith(`${PREFIX}/`) && e.request.method === "POST") {
+        streamUpload(e);
+        return;
+    }
+    // Default to passthrough.
+    e.respondWith(fetch(e.request));
+});
