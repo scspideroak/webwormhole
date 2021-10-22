@@ -438,7 +438,7 @@ async function connect() {
 }
 function waiting() {
     infoBox.innerText =
-        "Waiting for the other side to join by typing the wormhole phrase, opening this URL, or scanning the QR code.";
+        "Waiting for the other side to join by typing the airlock phrase, opening this URL, or scanning the QR code.";
 }
 function dialling() {
     state = "dialling";
@@ -449,6 +449,7 @@ function dialling() {
     filepicker.disabled = false;
     clipboardInput.disabled = false || hacks.noclipboardapi;
     dialButton.disabled = true;
+    dialButton.hidden = true;
     phraseInput.readOnly = true;
     document.body.addEventListener("paste", pasteEvent);
 }
@@ -467,16 +468,16 @@ function disconnected(reason) {
     document.body.style.backgroundColor = "";
     // TODO better error types or at least hoist the strings to consts.
     if (reason === "bad key") {
-        infoBox.innerText = "Wrong wormhole phrase.";
+        infoBox.innerText = "Wrong airlock phrase.";
     }
     else if (reason === "bad code") {
-        infoBox.innerText = "Not a valid wormhole phrase.";
+        infoBox.innerText = "Not a valid airlock phrase.";
     }
     else if (reason === "no such slot") {
-        infoBox.innerText = "No such slot. The wormhole might have expired.";
+        infoBox.innerText = "No such slot. The airlock might have expired.";
     }
     else if (reason === "timed out") {
-        infoBox.innerText = "Wormhole expired.";
+        infoBox.innerText = "Airlock expired.";
     }
     else if (reason === "could not connect to signalling server") {
         infoBox.innerText =
@@ -505,6 +506,7 @@ function disconnected(reason) {
     clipboardInput.disabled = true;
     document.body.removeEventListener("paste", pasteEvent);
     dialButton.disabled = false;
+    dialButton.hidden = false;
     phraseInput.readOnly = false;
     phraseInput.value = "";
     codechange();
@@ -553,10 +555,14 @@ function hashchange() {
 }
 function codechange() {
     if (phraseInput.value === "") {
-        dialButton.value = "CREATE WORMHOLE";
+        dialButton.value = "Get file";
+        dialButton.disabled = true;
+        dialButton.hidden = false;
     }
     else {
-        dialButton.value = "JOIN WORMHOLE";
+        dialButton.value = "Get file";
+        dialButton.disabled = false;
+        dialButton.hidden = false;
     }
 }
 function autocompletehint() {
@@ -701,7 +707,7 @@ async function init() {
     // Detect Browser Quirks.
     browserhacks();
     if (hacks.ext) {
-        signalserver = new URL("https://webwormhole.io/");
+        signalserver = new URL("https://quickcc-staging.cloud.spideroak-inc.com/");
     }
     let wasmURL = "webwormhole.wasm";
     if (hacks.chromeext) {
@@ -752,9 +758,13 @@ async function init() {
         phraseInput.value = location.hash.substring(1);
     }
     codechange(); // User might have typed something while we were loading.
-    dialButton.disabled = false;
     if (!hacks.noautoconnect && phraseInput.value !== "") {
+        dialButton.disabled = false;
+        dialButton.hidden = false;
         connect();
+    } else {
+        dialButton.disabled = true;
+        dialButton.hidden = false;
     }
 }
 init();
