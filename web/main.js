@@ -771,7 +771,7 @@ async function init() {
     wasmURL = chrome.runtime.getURL("webwormhole.wasm");
   }
   // Wait for the ServiceWorker, WebAssembly, and DOM to be ready.
-  await Promise.all([domready(), /*swready()*/, wasmready(wasmURL)]);
+  await Promise.all([domready(), swready(), wasmready(wasmURL)]);
   // Wireup HTML.
   dialButton = document.getElementById("dial");
   phraseInput = document.getElementById("magiccode");
