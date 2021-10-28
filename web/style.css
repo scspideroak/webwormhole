@@ -1,31 +1,31 @@
 :root {
-  --purple: #321d47;
-  --yellow: #ffa400;
-  --yellow-tint: #ffa40012;
-  --grey: #8e8a8a;
-  --grey-tint: #00000054;
-  --grey-light: #aeac9c;
-  --white: white;
-  --black: black;
-  --error: #8a504a;
-  --dialling: #8c782a;
-  --connected: #c1ffab;
-  --highlight: #8464a4;
-  --crossclave-cream-light: #fff1e4;
-  --crossclave-border-gray: #141923;
-  --crossclave-button-background: #ef6c56;
-  --crossclave-text-gray: #273143;
-  --crossclave-text-light-gray: #5d6575;
+        --purple: #321d47;
+        --yellow: #ffa400;
+        --yellow-tint: #ffa40012;
+        --grey: #8e8a8a;
+        --grey-tint: #00000054;
+        --grey-light: #aeac9c;
+        --white: white;
+        --black: black;
+        --error: #8a504a;
+        --dialling: #8c782a;
+        --connected: #c1ffab;
+        --highlight: #8464a4;
+        --crossclave-cream-light: #fff1e4;
+        --crossclave-border-gray: #141923;
+        --crossclave-button-background: #ef6c56;
+        --crossclave-text-gray: #273143;
+        --crossclave-text-light-gray: #5d6575;
 
-  /* Palette of background colours chosen by the session key. */
-  --palette-0: #c1ffab; /* bright green */
-  --palette-1: #c3c0a7; /* brown */
-  --palette-2: #b7ae5e; /* gold */
-  --palette-3: #6cc3c5; /* teal */
-  --palette-4: #cccccc; /* grey */
-  --palette-5: #88b6fb; /* blue */
-  --palette-6: #cdff33; /* lime */
-  --palette-7: #e796ea; /* purple */
+        /* Palette of background colours chosen by the session key. */
+        --palette-0: #c1ffab; /* bright green */
+        --palette-1: #c3c0a7; /* brown */
+        --palette-2: #b7ae5e; /* gold */
+        --palette-3: #6cc3c5; /* teal */
+        --palette-4: #cccccc; /* grey */
+        --palette-5: #88b6fb; /* blue */
+        --palette-6: #cdff33; /* lime */
+        --palette-7: #e796ea; /* purple */
 }
 
 @font-face {
@@ -39,346 +39,345 @@
 }
 
 html {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
 }
 
 body {
-  align-items: center;
-  background-color: var(--crossclave-cream-light);
-  display: flex;
-  flex-direction: column;
-  font-size: 18px;
-  justify-content: flex-start;
-  margin: 0;
-  padding: 0;
+        align-items: center;
+        background-color: var(--crossclave-cream-light);
+        display: flex;
+        flex-direction: column;
+        font-size: 18px;
+        justify-content: flex-start;
+        margin: 0;
+        padding: 0;
 }
 
 #main {
-  display: flex;
-  align-items: center;
-  flex-flow: column;
-  justify-content: flex-start;
-  padding: 1em 0;
-  overflow: auto;
-  text-align: center;
-  background: var(--crossclave-cream-light);
-  box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        flex-flow: column;
+        justify-content: flex-start;
+        padding: 1em 0;
+        overflow: auto;
+        text-align: center;
+        background: var(--crossclave-cream-light);
+        box-sizing: border-box;
 }
 
 #prompt {
-  display: flex;
-  align-items: center;
-  flex-flow: column;
+        display: flex;
+        align-items: center;
+        flex-flow: column;
 }
 
 .connected #prompt p,
 .dialling #prompt p {
-  display: none;
+        display: none;
 }
 
 #header {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  align-self: center;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        align-self: center;
 }
 
 #header .header-logo {
-  margin-top: 20px;
-  margin-bottom: 20px;
+        margin-top: 20px;
+        margin-bottom: 20px;
 }
 
 #spideroak {
-  font-family: "Graphik";
-  margin: 16px 8px;
-  font-size: 22px;
-  padding: 8px 0;
-  text-align: center;
-  color: black;
-  font-weight: bold;
+        font-family: "Graphik";
+        margin: 16px 8px;
+        font-size: 22px;
+        padding: 8px 0;
+        text-align: center;
+        color: black;
+        font-weight: bold;
 }
 
 #hint {
-  font-family: "Graphik";
-  margin-left: 32px;
-  margin-right: 32px;
-  font-size: 19px;
-  text-align: center;
-  color: black;
+        font-family: "Graphik";
+        margin-left: 32px;
+        margin-right: 32px;
+        font-size: 19px;
+        text-align: center;
+        color: black;
 }
 
 /* LIST STYLES */
 
 #transfers {
-  display: none;
-  list-style-type: none;
-  padding-left: 0;
-  margin-top: 10px;
-  width: 80%;
-  max-width: 400px;
+        display: none;
+        list-style-type: none;
+        padding-left: 0;
+        margin-top: 10px;
+        width: 80%;
+        max-width: 400px;
 }
 
 .disconnected #transfers,
 .error #transfers,
 .dialling #transfers {
-  display: none;
+        display: none;
 }
 
 .connected #transfers {
-  display: unset;
+        display: unset;
 }
 
 #transfers div {
-  margin-left: 8px;
-  display: flex;
-  flex-direction: column;
-  align-self: auto;
-  flex: 1;
+        margin-left: 8px;
+        display: flex;
+        flex-direction: column;
+        align-self: auto;
+        flex: 1;
 }
 
 #transfers li {
-  display: flex;
-  flex-direction: row;
-  border: none;
-  border-radius: 8px;
-  background-color: var(--white);
-  margin: 5px;
-  padding: 8px;
-  box-shadow: -4px 2px 0px #000000;
+        display: flex;
+        flex-direction: row;
+        border: none;
+        border-radius: 8px;
+        background-color: var(--white);
+        margin: 5px;
+        padding: 8px;
+        box-shadow: -4px 2px 0px #000000;
 }
 
 #transfers img {
-  height: 20px;
-  width: 20px;
-  align-self: center;
-  align-items: center;
-  margin-right: 20px;
+        height: 20px;
+        width: 20px;
+        align-self: center;
+        align-items: center;
+        margin-right: 20px;
 }
 
 #transfers span {
-  font-family: "Graphik", Arial, Helvetica, sans-serif;
-  font-size: 12px;
-  text-align: start;
-  margin-top: 8px;
-  color: var(--crossclave-text-light-gray);
+        font-family: "Graphik", Arial, Helvetica, sans-serif;
+        font-size: 12px;
+        text-align: start;
+        margin-top: 8px;
+        color: var(--crossclave-text-light-gray);
 }
 
 #transfers span.file-text {
-  font-size: 15px;
-  color: var(--crossclave-text-gray);
-  -webkit-line-clamp: 2;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
+        font-size: 15px;
+        color: var(--crossclave-text-gray);
+        -webkit-line-clamp: 2;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
 }
 
 #transfers li.upload {
-  list-style-type: "â†‘ ";
+        list-style-type: "â†‘ ";
 }
 
 #transfers li.download {
-  list-style-type: "â†“ ";
+        list-style-type: "â†“ ";
 }
 
 #transfers li.pending {
-  list-style-type: "... ";
+        list-style-type: "... ";
 }
 
 #transfers img.file {
-  height: 38px;
-  width: 38px;
-  align-self: center;
-  align-items: center;
-  padding: 8px;
-  margin: 8px;
-  border: 0.5px solid #c9cbd0;
-  box-sizing: border-box;
-  border-radius: 2px;
+        height: 38px;
+        width: 38px;
+        align-self: center;
+        align-items: center;
+        padding: 8px;
+        margin: 8px;
+        border: 0.5px solid #c9cbd0;
+        box-sizing: border-box;
+        border-radius: 2px;
 }
 
 /* END LIST STYLES */
 
 #qr {
-  margin: 4px;
-  border: 2px solid;
-  width: 256px;
-  height: 256px;
-  display: none;
+        margin: 4px;
+        border: 2px solid;
+        width: 256px;
+        height: 256px;
+        display: none;
 }
 
 .dialling #qr[src] {
-  display: inherit;
+        display: inherit;
 }
 
 .group {
-  position: relative;
+        position: relative;
 }
 
 #input-label {
-  font-family: "Graphik", Arial, Helvetica, sans-serif;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 12px;
-  padding: 0 0.2em;
-  position: absolute;
-  top: 1.2em;
-  left: 4em;
-  padding-left: 8px;
-  padding-right: 8px;
-  background-color: var(--crossclave-cream-light);
+        font-family: "Graphik", Arial, Helvetica, sans-serif;
+        font-weight: 600;
+        font-size: 12px;
+        line-height: 12px;
+        padding: 0 0.2em;
+        position: absolute;
+        top: 1.2em;
+        left: 4em;
+        padding-left: 8px;
+        padding-right: 8px;
+        background-color: var(--crossclave-cream-light);
 }
 
 .dialling #input-label,
 .error #input-label,
 .connected #input-label {
-  display: none;
-  visibility: hidden;
+        display: none;
+        visibility: hidden;
 }
 
 .invisible{
-  display: none;
-  visibility: hidden;
+        display: none;
+        visibility: hidden;
 }
 
 #magiccode {
-  color: var(--crossclave-button-background);
-  background: var(--crossclave-cream-light);
-  border: 1px solid var(--crossclave-border-gray);
-  border-radius: 4px;
-  font-family: "Overpass Mono", Arial, Helvetica, sans-serif;
-  height: 32px;
-  width: 300px;
-  padding: 16px;
-  margin-top: 20px;
-  margin-left: 32px;
-  margin-right: 32px;
-  font-size: 16px;
-  line-height: 24px;
-  text-align: center;
-  text-transform: uppercase;
+        color: var(--crossclave-button-background);
+        background: var(--crossclave-cream-light);
+        border: 1px solid var(--crossclave-border-gray);
+        border-radius: 4px;
+        font-family: "Overpass Mono", Arial, Helvetica, sans-serif;
+        height: 32px;
+        width: 300px;
+        padding: 16px;
+        margin-top: 20px;
+        margin-left: 32px;
+        margin-right: 32px;
+        font-size: 16px;
+        line-height: 24px;
+        text-align: center;
+        text-transform: uppercase;
 }
 
 .connected #magiccode {
-  opacity: 0.2;
+        opacity: 0.2;
 }
 
 .dialling #magiccode,
 .connected #magiccode,
 .error #magiccode {
-  display: none;
+        display: none;
 }
 
 .disconnected #magiccode {
-  display: unset;
+        display: unset;
 }
 
 div input[type="text"]:focus {
-  outline: 0;
+        outline: 0;
 }
 
 ::placeholder {
-  /* Recent browsers */
-  color: var(--crossclave-text-gray);
-  font-size: 15px;
-  text-transform: none;
-  font-family: "Graphik", Arial, Helvetica, sans-serif;
+        color: var(--crossclave-text-gray);
+        font-size: 15px;
+        text-transform: none;
+        font-family: "Graphik", Arial, Helvetica, sans-serif;
 }
 
 #dial {
-  margin-top: 12px;
-  width: 140px;
+        margin-top: 12px;
+        width: 140px;
 }
 
 .connected #dial,
 .dialling #dial,
 .error #dial {
-  display: none;
+        display: none;
 }
 
 #info {
-  color: var(--crossclave-border-gray);
-  align-self: center;
-  text-align: center;
-  font-size: 19px;
-  font-family: "Graphik", Arial, Helvetica, sans-serif;
-  line-height: 20px;
-  margin-top: 40px;
-  display: none;
+        color: var(--crossclave-border-gray);
+        align-self: center;
+        text-align: center;
+        font-size: 19px;
+        font-family: "Graphik", Arial, Helvetica, sans-serif;
+        line-height: 20px;
+        margin-top: 40px;
+        display: none;
 }
 
 .disconnected #info,
 .connected #info {
-  display: none;
+        display: none;
 }
 
 .dialling #info,
 .error #info {
-  display: unset;
+        display: unset;
 }
 
 .button {
-  -webkit-appearance: none;
-  appearance: none;
-  background: var(--crossclave-button-background);
-  border-radius: 16px;
-  color: var(--white);
-  font-size: 18px;
-  text-transform: none;
-  height: 48px;
-  font-family: "Graphik", Arial, Helvetica, sans-serif;
-  cursor: pointer;
-  margin: 12px 0px;
-  transition: all 0.2s ease 0s;
+        -webkit-appearance: none;
+        appearance: none;
+        background: var(--crossclave-button-background);
+        border-radius: 16px;
+        color: var(--white);
+        font-size: 18px;
+        text-transform: none;
+        height: 48px;
+        font-family: "Graphik", Arial, Helvetica, sans-serif;
+        cursor: pointer;
+        margin: 12px 0px;
+        transition: all 0.2s ease 0s;
 }
 
 .button:hover {
-  box-shadow: 0px 0px 5px 0px var(--crossclave-button-background);
-  opacity: 0.75;
+        box-shadow: 0px 0px 5px 0px var(--crossclave-button-background);
+        opacity: 0.75;
 }
 
 .button:disabled,
 .button:disabled:hover {
-  background: var(--crossclave-button-background);
-  box-shadow: 0px 0px 5px 0px var(--crossclave-button-background);
-  opacity: 0.3;
-  cursor: unset;
-  letter-spacing: unset;
-  transition: all 0.2s ease 0s;
+        background: var(--crossclave-button-background);
+        box-shadow: 0px 0px 5px 0px var(--crossclave-button-background);
+        opacity: 0.3;
+        cursor: unset;
+        letter-spacing: unset;
+        transition: all 0.2s ease 0s;
 }
 
 a {
-  text-decoration: none;
-  color: var(--yellow);
+        text-decoration: none;
+        color: var(--yellow);
 }
 
 a:link,
 a:visited {
-  border-bottom: 1px dotted;
+        border-bottom: 1px dotted;
 }
 
 a:link:hover,
 a:visited:hover {
-  border-bottom: 1px solid;
+        border-bottom: 1px solid;
 }
 
 #main {
-  height: min-content;
-  min-height: 200px;
-  width: 100%;
+        height: min-content;
+        min-height: 200px;
+        width: 100%;
 }
 
 @media only screen and (min-width: 700px) {
-  #main {
-    width: min-content;
-    min-width: 400px;
-    height: 100%;
-  }
+        #main {
+                width: min-content;
+                min-width: 400px;
+                height: 100%;
+        }
 }
 
 #receive-image {
-  height: 195px;
-  width: 250px;
+        height: 195px;
+        width: 250px;
 }

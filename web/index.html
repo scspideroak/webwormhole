@@ -1,55 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
-  <meta charset="utf-8" />
-  <meta name="description" content="Send files from one place to another." />
-  <meta
-    name="go-import"
-    content="webwormhole.io git https://github.com/saljam/webwormhole"
+<meta charset="utf-8" />
+<meta name="description" content="Send files from one place to another." />
+<meta name="go-import" content="webwormhole.io git https://github.com/saljam/webwormhole" />
+<meta name="viewport" content="width=device-width, height=device-height" />
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="icon" href="icon192.png" />
+<link rel="apple-touch-icon" href="icon192.png">
+<link rel="manifest" href="/pwa.json">
+<link rel="stylesheet" href="style.css" />
+<script src="wasm_exec.js"></script>
+<script src="ww.js"></script>
+<script src="main.js"></script>
+<title>SpiderOak Airlock</title>
+<body class="connected">
+<form id="main" role="main">
+<div id="header">
+  <img class="header-logo" src="logo.svg" alt="CrossClave" />
+</div>
+<p id="hint">Recieve a file with end-to-end<br />encrypted magic</p>
+<img id="receive-image" src="receive-file.png" alt="CrossClave" />
+<ul id="transfers">
+  <li>
+    <img id="file-image" class="file" src="word_icon.png" alt="File"/>
+    <div>
+      <span id="file-title" class="file-text">Word Document Test</span>
+      <span id="file-data">246 mb, doc.x</span>
+    </div>
+    <img id="download-button" src="download_icon.png" alt="download..."/>
+  </li>
+</ul>
+<div id="prompt">
+<img id="qr" />
+<div class="group">
+  <label id="input-label">SECRET PHRASE</label>
+  <input
+    type="text"
+    id="magiccode"
+    autocomplete="off"
+    autofocus
+    title="secret phrase"
+    placeholder="Type a secret phrase to start…"
   />
-  <meta name="viewport" content="width=device-width, height=device-height" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black-translucent"
-  />
-  <link rel="icon" href="icon192.png" />
-  <link rel="apple-touch-icon" href="icon192.png" />
-  <link rel="manifest" href="/pwa.json" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="wasm_exec.js"></script>
-  <script src="ww.js"></script>
-  <script src="main.js"></script>
-  <title>SpiderOak Airlock</title>
-  <body class="disconnected">
-    <form id="main" role="main">
-      <div id="header">
-        <img class="header-logo" src="logo.svg" alt="CrossClave" />
-      </div>
-      <p id="hint">Recieve a file with end-to-end<br />encrypted magic</p>
-      <img id="receive-image" src="receive-file.png" alt="CrossClave" />
-      <ul id="transfers"></ul>
-      <div id="prompt">
-        <img id="qr" />
-        <div class="group">
-            <label id="input-label">SECRET PHRASE</label>
-            <input
-            type="text"
-            id="magiccode"
-            autocomplete="off"
-            autofocus
-            title="secret phrase"
-            placeholder="Type a secret phrase to start…"
-          />
-        </div>
-        <input
-          type="submit"
-          id="dial"
-          class="button"
-          value="Get file"
-          disabled
-        />
-      </div>
-      <span id="info">Connecting...</span>
-    </form>
-  </body>
+</div>
+<input
+  type="submit"
+  id="dial"
+  class="button"
+  value="Get file"
+  disabled
+/>
+</div>
+<span id="autocomplete"></span>
+</div>
+<span id="info">Connecting...</span>
+</form>
+</body>
 </html>
