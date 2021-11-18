@@ -396,8 +396,8 @@ function dialling() {
 	document.body.classList.remove("connected");
 	document.body.classList.remove("disconnected");
 
-	document.getElementById("filepicker").disabled = false;
-	document.getElementById("clipboard").disabled = false || hacks.noclipboardapi;
+	// document.getElementById("filepicker").disabled = false;
+	// document.getElementById("clipboard").disabled = false || hacks.noclipboardapi;
 	document.getElementById("dial").disabled = true;
 	document.getElementById("magiccode").readOnly = true;
 	document.body.addEventListener("paste", pasteEvent);
@@ -449,14 +449,14 @@ function disconnected(reason) {
 	document.body.classList.remove("connected");
 	document.body.classList.add("disconnected");
 
-	document.getElementById("filepicker").disabled = true;
-	document.getElementById("clipboard").disabled = true;
+	// document.getElementById("filepicker").disabled = true;
+	// document.getElementById("clipboard").disabled = true;
 	document.body.removeEventListener("paste", pasteEvent);
 	document.getElementById("dial").disabled = false;
 	document.getElementById("magiccode").readOnly = false;
 	document.getElementById("magiccode").value = "";
 	codechange();
-	updateqr("");
+	// updateqr("");
 
 	location.hash = "";
 
@@ -480,6 +480,15 @@ function unhighlight() {
 function preventdefault(e) {
 	e.preventDefault();
 	e.stopPropagation();
+}
+
+function displayInputLabel() {
+	const inputLabel = document.getElementById("input-label");
+    if (document.body.classList.contains("disconnected") && document.activeElement === document.getElementById("magiccode")) {
+        inputLabel.classList.remove("invisible");
+    } else {
+        inputLabel.classList.add("invisible");
+    }
 }
 
 async function copyurl() {
@@ -510,12 +519,45 @@ function hashchange() {
 	}
 }
 
+//This function is pending to be wired to the file download
+function download() {
+    console.log("DOWNLOADING");
+}
+//This function will insert a list item with the desired UI according to the figma designs
+function insertListItem(title, data, imageSrc) {
+	const transfersList = document.getElementById("transfers");
+    if (transfersList === null || transfersList === undefined) {
+        console.error("TRANSFER LIST", "was not initialized");
+        return;
+    }
+    const fileImg = document.getElementById("file-image");
+    const fileTitle = document.getElementById("file-title");
+    const fileData = document.getElementById("file-data");
+    const downloadImg = document.getElementById("download-button");
+    fileImg.src = imageSrc ? imageSrc : "word_icon.png";
+    fileTitle.textContent = title;
+    fileData.textContent = data;
+    downloadImg.addEventListener("click", download);
+}
+
+function setDialButtonEnabled(enable) {
+	const dialButton = document.getElementById("dial");
+    if (enable) {
+        dialButton.disabled = false;
+        dialButton.hidden = false;
+    } else {
+        dialButton.disabled = true;
+        dialButton.hidden = false;
+    }
+}
+
 function codechange() {
 	if (document.getElementById("magiccode").value === "") {
-		document.getElementById("dial").value = "CREATE WORMHOLE";
-	} else {
-		document.getElementById("dial").value = "JOIN WORMHOLE";
-	}
+        setDialButtonEnabled(false);
+    }
+    else {
+        setDialButtonEnabled(true);
+    }
 }
 
 function autocompletehint() {
@@ -676,7 +718,6 @@ async function wasmready() {
 		document.body.classList.add("error");
 		return;
 	}
-
 	// Install event handlers. If we start to allow queueing files before
 	// connections we might want to move these into domready so as to not
 	// block them.
@@ -684,11 +725,10 @@ async function wasmready() {
 	document.getElementById("magiccode").addEventListener("input", codechange);
 	document.getElementById("magiccode").addEventListener("keydown", autocomplete);
 	document.getElementById("magiccode").addEventListener("input", autocompletehint);
-	document.getElementById("filepicker").addEventListener("change", pick);
-	document.getElementById("clipboard").addEventListener("click", pasteClipboard);
+	document.getElementById("magiccode").addEventListener("focus", displayInputLabel);
+    document.getElementById("magiccode").addEventListener("blur", displayInputLabel);
 	document.getElementById("main").addEventListener("submit", preventdefault);
 	document.getElementById("main").addEventListener("submit", connect);
-	document.getElementById("qr").addEventListener("dblclick", copyurl);
 	document.body.addEventListener("drop", preventdefault);
 	document.body.addEventListener("dragenter", preventdefault);
 	document.body.addEventListener("dragover", preventdefault);
@@ -707,6 +747,9 @@ async function wasmready() {
 	document.getElementById("dial").disabled = false;
 
 	if (!hacks.noautoconnect && document.getElementById("magiccode").value !== "") {
-		connect();
-	}
+        setDialButtonEnabled(true);
+        connect();
+    } else {
+        setDialButtonEnabled(false);
+    }
 })();
