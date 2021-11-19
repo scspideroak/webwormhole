@@ -61,7 +61,6 @@ body {
 	flex-flow: column;
 	justify-content: flex-start;
 	padding: 1em 0;
-	overflow: auto;
 	text-align: center;
 	background: var(--crossclave-cream-light);
 	box-sizing: border-box;
