@@ -161,6 +161,7 @@ body {
 	font-size: 12px;
 	text-align: start;
 	margin-top: 8px;
+	margin-right: 10px;
 	color: var(--crossclave-text-light-gray);
 }
 

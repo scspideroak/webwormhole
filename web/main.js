@@ -465,7 +465,7 @@ function preventdefault(e) {
 
 function displayInputLabel() {
 	const inputLabel = document.getElementById("input-label");
-    if (document.body.classList.contains("disconnected") && document.activeElement === document.getElementById("magiccode")) {
+    if (document.activeElement === document.getElementById("magiccode")) {
         inputLabel.classList.remove("invisible");
     } else {
         inputLabel.classList.add("invisible");
