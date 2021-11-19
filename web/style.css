@@ -130,7 +130,7 @@ body {
 	display: unset;
 }
 
-#transfers div {
+#transfers .data {
 	margin-left: 8px;
 	display: flex;
 	flex-direction: column;
@@ -140,7 +140,7 @@ body {
 
 #transfers li {
 	display: flex;
-	flex-direction: row;
+	flex-direction: column;
 	border: none;
 	border-radius: 8px;
 	background-color: var(--white);
@@ -187,6 +187,10 @@ body {
 	list-style-type: "... ";
 }
 
+#transfers progress {
+	align-self: center;
+}
+
 #transfers img.file {
 	height: 38px;
 	width: 38px;
@@ -194,9 +198,6 @@ body {
 	align-items: center;
 	padding: 8px;
 	margin: 8px;
-	border: 0.5px solid #c9cbd0;
-	box-sizing: border-box;
-	border-radius: 2px;
 }
 
 /* END LIST STYLES */
@@ -231,6 +232,11 @@ body {
 	visibility: hidden;
 }
 
+#list-item-container {
+	display: flex;
+	flex-direction: row;
+}
+
 #magiccode {
 	color: var(--crossclave-button-background);
 	background: var(--crossclave-cream-light);
@@ -249,18 +255,11 @@ body {
 	text-transform: uppercase;
 }
 
-.connected #magiccode {
-	opacity: 0.2;
-}
-
 .dialling #magiccode,
 .connected #magiccode,
+.disconnected #magiccode,
 .error #magiccode {
 	display: none;
-}
-
-.disconnected #magiccode {
-	display: unset;
 }
 
 div input[type="text"]:focus {
@@ -279,6 +278,7 @@ div input[type="text"]:focus {
 	width: 140px;
 }
 
+.disconnected #dial, 
 .connected #dial,
 .dialling #dial,
 .error #dial {
@@ -296,12 +296,9 @@ div input[type="text"]:focus {
 	display: none;
 }
 
-.disconnected #info,
-.connected #info {
-	display: none;
-}
-
 .dialling #info,
+.disconnected #info,
+.connected #info,
 .error #info {
 	display: unset;
 }
@@ -362,6 +359,16 @@ a:visited:hover {
 			width: min-content;
 			min-width: 400px;
 			height: 100%;
+	}
+}
+
+@media only screen and (max-width: 340px) {
+	#magiccode {
+		width: 200px;
+	}
+
+	#input-label {
+		left: 3.5em;
 	}
 }
 

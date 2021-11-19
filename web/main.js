@@ -228,6 +228,7 @@ function triggerDownload(receiving) {
 }
 
 function receive(e) {
+	const progressView = document.getElementById("progress");
 	if (!receiving) {
 		receiving = JSON.parse(new TextDecoder("utf8").decode(e.data));
 		receiving.id = `${Math.random().toString(16).substring(2)}-${encodeURIComponent(
@@ -239,24 +240,13 @@ function receive(e) {
 		}
 
 		if (receiving.type == "application/webwormhole-text") {
-			receiving.pre = document.createElement("pre");
-			receiving.pre.appendChild(document.createTextNode(`${receiving.name}`));
-			receiving.li = document.createElement("li");
-			receiving.li.appendChild(receiving.pre);
-			receiving.li.classList.add("download");
-			document.getElementById("transfers").appendChild(receiving.li);
+
+			insertListItem(receiving.name, receiving.size);
 			receiving = null;
 			return;
 		}
 
-		receiving.li = document.createElement("li");
-		receiving.a = document.createElement("a");
-		receiving.li.appendChild(receiving.a);
-		receiving.a.appendChild(document.createTextNode(`${receiving.name}`));
-		receiving.li.classList.add("download");
-		receiving.progress = document.createElement("progress");
-		receiving.li.appendChild(receiving.progress);
-		document.getElementById("transfers").appendChild(receiving.li);
+		insertListItem(receiving.name, receiving.size, () => triggerDownload(receiving));
 
 		if (serviceworker) {
 			serviceworker.postMessage({
@@ -297,7 +287,7 @@ function receive(e) {
 	}
 
 	receiving.offset += chunkSize;
-	receiving.progress.value = receiving.offset / receiving.size;
+	progressView.value = receiving.offset / receiving.size;
 
 	if (receiving.offset === receiving.size) {
 		if (serviceworker) {
@@ -306,7 +296,6 @@ function receive(e) {
 			triggerDownload(receiving);
 		}
 
-		receiving.li.removeChild(receiving.progress);
 		receiving = null;
 	}
 }
@@ -379,7 +368,6 @@ async function connect() {
 		document.getElementById("magiccode").title = encodedfp.substring(
 			encodedfp.indexOf("-") + 1,
 		);
-		document.body.style.backgroundColor = `var(--palette-${fingerprint[0]%8})`;
 	} catch (err) {
 		disconnected(err);
 	}
@@ -396,16 +384,12 @@ function dialling() {
 	document.body.classList.remove("connected");
 	document.body.classList.remove("disconnected");
 
-	// document.getElementById("filepicker").disabled = false;
-	// document.getElementById("clipboard").disabled = false || hacks.noclipboardapi;
 	document.getElementById("dial").disabled = true;
 	document.getElementById("magiccode").readOnly = true;
 	document.body.addEventListener("paste", pasteEvent);
 }
 
 function connected() {
-	document.getElementById("info").innerText = "";
-
 	document.body.classList.remove("dialling");
 	document.body.classList.add("connected");
 	document.body.classList.remove("disconnected");
@@ -449,14 +433,11 @@ function disconnected(reason) {
 	document.body.classList.remove("connected");
 	document.body.classList.add("disconnected");
 
-	// document.getElementById("filepicker").disabled = true;
-	// document.getElementById("clipboard").disabled = true;
 	document.body.removeEventListener("paste", pasteEvent);
 	document.getElementById("dial").disabled = false;
 	document.getElementById("magiccode").readOnly = false;
 	document.getElementById("magiccode").value = "";
 	codechange();
-	// updateqr("");
 
 	location.hash = "";
 
@@ -519,26 +500,21 @@ function hashchange() {
 	}
 }
 
-//This function is pending to be wired to the file download
-function download() {
-    console.log("DOWNLOADING");
-}
 //This function will insert a list item with the desired UI according to the figma designs
-function insertListItem(title, data, imageSrc) {
+function insertListItem(fileName, fileSize) {
+	const sizeString = formatSize(fileSize) || "0 B"
 	const transfersList = document.getElementById("transfers");
     if (transfersList === null || transfersList === undefined) {
         console.error("TRANSFER LIST", "was not initialized");
         return;
     }
-    const fileImg = document.getElementById("file-image");
     const fileTitle = document.getElementById("file-title");
     const fileData = document.getElementById("file-data");
-    const downloadImg = document.getElementById("download-button");
-    fileImg.src = imageSrc ? imageSrc : "word_icon.png";
-    fileTitle.textContent = title;
-    fileData.textContent = data;
-    downloadImg.addEventListener("click", download);
+    fileTitle.textContent = fileName;
+    fileData.textContent = sizeString;
+	document.getElementById("info").innerText = "";
 }
+
 
 function setDialButtonEnabled(enable) {
 	const dialButton = document.getElementById("dial");

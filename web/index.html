@@ -10,11 +10,12 @@
 <link rel="apple-touch-icon" href="icon192.png">
 <link rel="manifest" href="/pwa.json">
 <link rel="stylesheet" href="style.css" />
+<script src="utils/format-file-size.js"></script>
 <script src="wasm_exec.js"></script>
-<script src="ww.js"></script>
+<script src="webwormhole.js"></script>
 <script src="main.js"></script>
 <title>SpiderOak Airlock</title>
-<body class="disconnected">
+<body>
 <form id="main" role="main">
 <div class="header">
   <img class="logo" src="logo.svg" alt="CrossClave" />
@@ -23,12 +24,15 @@
 <img id="receive-image" src="receive-file.png" alt="CrossClave" />
 <ul id="transfers">
   <li>
-    <img id="file-image" class="file" src="word_icon.png" alt="File"/>
-    <div>
-      <span id="file-title" class="file-text">Word Document Test</span>
-      <span id="file-data">246 mb, doc.x</span>
+    <div id="list-item-container">
+      <img id="file-image" class="file" src="./assets/text-file.svg" alt="File"/>
+      <div class="data">
+        <span id="file-title" class="file-text"></span>
+        <span id="file-data"></span>
+      </div>
+      <img id="download-button" src="download_icon.png" alt="download..."/>
     </div>
-    <img id="download-button" src="download_icon.png" alt="download..."/>
+    <progress id="progress"></progress>
   </li>
 </ul>
 <div id="prompt">
