@@ -699,8 +699,6 @@ async function wasmready() {
 	// block them.
 	window.addEventListener("hashchange", hashchange);
 	document.getElementById("magiccode").addEventListener("input", codechange);
-	document.getElementById("magiccode").addEventListener("keydown", autocomplete);
-	document.getElementById("magiccode").addEventListener("input", autocompletehint);
 	document.getElementById("magiccode").addEventListener("focus", displayInputLabel);
     document.getElementById("magiccode").addEventListener("blur", displayInputLabel);
 	document.getElementById("main").addEventListener("submit", preventdefault);
